@@ -29,7 +29,7 @@ open import Data.List as List using (List; []; _∷_; _++_; [_]; reverse; _∷ʳ
 import Data.List.Properties as List
 
 -- _≡_
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; module ≡-Reasoning)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; module ≡-Reasoning)
 
 record QPER (A B : Set) : Set₁ where
   field
@@ -70,30 +70,11 @@ record Seq (A : Set) : Set where
 Here, the type `A` is meant to implement sequences, and the operations are in terms of this type `A`.
 
 ```agda
-open import Data.Vec using (Vec) renaming (sum to sumv; map to mapv)
+open import Data.Vec using (Vec)
 import Data.Vec as Vec
-
-record Graph (V : Set) (G : Set) : Set where
-  field
-    empty : G
-
-    isnode : G → V → Bool
-    addnode : (g : G) → (v : V) → (isnode g v ≡ false) → G
-
-    isedge : G → V × V → Bool
-    addedge : (g : G) → (uv : V × V) → (isnode g (proj₁ uv) ≡ true) → (isnode g (proj₂ uv) ≡ true) → (isedge g uv ≡ false) → G
-
-    n : G → ℕ
-    nodes : (g : G) → Vec V (n g)
-    m : G → ℕ
-    nnbors : G → V → ℕ
-    nbors : (g : G) → (v : V) → Vec V (nnbors g v)
-```
-
-```agda
 open import Relation.Nullary.Negation
 
-record Graph2 (V : Set) (G : Set) : Set₁ where
+record Graph (V : Set) (G : Set) : Set₁ where
   field
     empty : G
 
@@ -101,26 +82,38 @@ record Graph2 (V : Set) (G : Set) : Set₁ where
     addnode : (g : G) (v : V) (npv : ¬ isnode g v) → G
 
     isedge : (g : G) (uv : V × V) → Set
-    addedge : (g : G) (uv : V × V) (pu : isnode g (proj₁ uv)) (pv : isnode g (proj₂ uv)) → (npuv : ¬ isedge g uv) → G
+    addedge : (g : G) (uv : V × V) (nuv : proj₁ uv ≢ proj₂ uv) (pu : isnode g (proj₁ uv)) (pv : isnode g (proj₂ uv)) (npuv : ¬ isedge g uv) → G
 
     n : G → ℕ
     nodes : (g : G) → Vec V (n g)
     m : G → ℕ
     nnbors : G → V → ℕ
     nbors : (g : G) (v : V) → Vec V (nnbors g v)
-    -- nbors : (g : G) (v : V) → List V
 ```
 
 An implementation (edge and vertex lists)
 
 ```agda
+-- TODO CITE https://stackoverflow.com/questions/58679462/is-there-an-element-in-list-datatype-defined-in-the-standard-library/58680751#58680751
 open import Data.Fin using (Fin)
--- open import Relation.Unary using (｛_｝)
-open import Relation.Unary using (Decidable)
-open import Relation.Nullary.Decidable using (yes; no)
 
 contains : ∀ {A : Set} (l : List A) (v : A) → Set
 contains l v = Σ[ n ∈ Fin (List.length l) ] lookup l n ≡ v
+
+data UniqueWitness {A : Set} : (l : List A) → Set where
+  empty : UniqueWitness []
+  unique : ∀ {x xs} → ¬ contains xs x → UniqueWitness xs → UniqueWitness (x ∷ xs)
+
+record UniqueList (A : Set) : Set where
+  constructor _\\_
+  field
+    l : List A
+    wf : UniqueWitness l
+```
+
+```agda
+open import Relation.Unary using (Decidable)
+open import Relation.Nullary.Decidable using (yes; no)
 
 data First {A B : Set} (P : A → Set) : A × B → Set where
   observe : ∀ {xy : A × B} → P (proj₁ xy) → First P xy
@@ -129,39 +122,42 @@ First? : ∀ {A B : Set} {P : A → Set} → Decidable P → Decidable (First {A
 First? P? (x , y) with P? x
 ... | yes Px = yes (observe Px)
 ... | no ¬Px = no λ{ (observe Px) → ¬Px Px }
--- -- ...                  | yes Px = yes (observe Px)
--- -- ...                  | no ¬Px = no λ{ Px → ¬Px Px}
--- -- All? P? []                                 =  yes []
--- -- All? P? (x ∷ xs) with P? x   | All? P? xs
--- -- ...                 | yes Px | yes Pxs     =  yes (Px ∷ Pxs)
--- -- ...                 | no ¬Px | _           =  no λ{ (Px ∷ Pxs) → ¬Px Px   }
--- -- ...                 | _      | no ¬Pxs     =  no λ{ (Px ∷ Pxs) → ¬Pxs Pxs }
 
--- fst-dec : ∀ {A B : Set} → Dec A → Dec (A × B)
--- does  (fst-dec a?) = does a? ∧ does b?
--- proof (fst-dec a?) = proof a? ×-reflects proof b?
+Edgelist : Set
+Edgelist = UniqueList ℕ × List (ℕ × ℕ)
 
-edgelist-nat-graph : Graph2 ℕ (List ℕ × List (ℕ × ℕ))
-edgelist-nat-graph .Graph2.empty = [] , []
-edgelist-nat-graph .Graph2.isnode ( vs , _ ) v = contains vs v
-edgelist-nat-graph .Graph2.addnode  ( vs , es ) v _ = v ∷ vs , es
-edgelist-nat-graph .Graph2.isedge (_ , es) e = contains es e
-edgelist-nat-graph .Graph2.addedge (vs , es) (u , v) _ _ _ = vs , (u , v) ∷ (v , u) ∷ es
-edgelist-nat-graph .Graph2.n (vs , _) = List.length vs
-edgelist-nat-graph .Graph2.nodes (vs , _) = Vec.fromList vs
-edgelist-nat-graph .Graph2.m (_ , es) = List.length es
-edgelist-nat-graph .Graph2.nnbors (_ , es) v = List.length (List.map proj₂ (filter (First? (Nat._≟_ v)) es))
-edgelist-nat-graph .Graph2.nbors (_ , es) v =  Vec.fromList (List.map proj₂ (filter (First? (Nat._≟_ v)) es))
+edgelist-nat-graph : Graph ℕ Edgelist
+edgelist-nat-graph .Graph.empty = [] \\ empty , []
+edgelist-nat-graph .Graph.isnode ( vs \\ _ , _ ) v = contains vs v
+edgelist-nat-graph .Graph.addnode  ( vs \\ wit , es ) v p = (v ∷ vs) \\ (unique p wit) , es
+edgelist-nat-graph .Graph.isedge (_ , es) e = contains es e
+edgelist-nat-graph .Graph.addedge (vs , es) (u , v) _ _ _ _ = vs , (u , v) ∷ (v , u) ∷ es
+edgelist-nat-graph .Graph.n (vs \\ _ , _) = List.length vs
+edgelist-nat-graph .Graph.nodes (vs \\ _ , _) = Vec.fromList vs
+edgelist-nat-graph .Graph.m (_ , es) = List.length es / 2
+edgelist-nat-graph .Graph.nnbors (_ , es) v = List.length (List.map proj₂ (filter (First? (Nat._≟_ v)) es))
+edgelist-nat-graph .Graph.nbors (_ , es) v = Vec.fromList (List.map proj₂ (filter (First? (Nat._≟_ v)) es))
 ```
 
--- Proofs
+```agda
+record Graph-Induction {V G} (Gr : Graph V G) (P : Graph V G → G → Set) : Set where
+  field
+    empty-case : P Gr (Graph.empty Gr)
+    addnode-case : ∀ {g : G} {v : V} {p} → P Gr g → P Gr (Graph.addnode Gr g v p)
+    addedge-case : ∀ {g : G} {uv : V × V} {p1} {p2} {p3} {p4} → P Gr g → P Gr (Graph.addedge Gr g uv p1 p2 p3 p4)
+```
 
-    undirected : (g : G) → (uv : V × V) → isedge g uv ≡ isedge g (Data.Product.swap uv)
+```agda
+undirected : ∀ {V G} (Gr : Graph V G) → (g : G) → Set
+undirected {V} Gr g = ((uv : V × V) → Graph.isedge Gr g uv → Graph.isedge Gr g (Data.Product.swap uv))
 
-    addnode_incr_node : (g : G) → (v : V) → (p : isnode g v ≡ false) → n (addnode g v p) ≡ 1 + n g
-    addnode_const_edge : (g : G) → (v : V) → (p : isnode g v ≡ false) → m (addnode g v p) ≡ m g
-
-    addedge_incr_edge : (g : G) → (uv : V × V) → (p : isedge g uv ≡ false) → m (addedge g uv p) ≡ 1 + m g
-    addedge_const_node : (g : G) → (uv : V × V) → (p : isedge g uv ≡ false) → n (addedge g uv p) ≡ n g
-
--- handshake : ∀ {g : G} sumv (mapv (nnbors g) (nodes g)) ≡ 2 * (m g)
+edgelist-undirected : Graph-Induction edgelist-nat-graph undirected
+edgelist-undirected .Graph-Induction.empty-case _ ()
+edgelist-undirected .Graph-Induction.addnode-case ug uv uv-in-g = ug uv uv-in-g
+edgelist-undirected .Graph-Induction.addedge-case _ _ (Fin.zero , Eq.refl) = Fin.suc Fin.zero , Eq.refl
+edgelist-undirected .Graph-Induction.addedge-case _ _ (Fin.suc Fin.zero , Eq.refl) = Fin.zero , Eq.refl
+edgelist-undirected .Graph-Induction.addedge-case {g} ug (u , v) (Fin.suc (Fin.suc idx) , Eq.refl) = Fin.suc (Fin.suc (proj₁ ih)) , proj₂ ih
+                                      where
+                                      ih : Graph.isedge edgelist-nat-graph g (v , u)
+                                      ih = ug (u , v) (idx , Eq.refl)
+```
