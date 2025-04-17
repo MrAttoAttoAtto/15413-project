@@ -235,4 +235,41 @@ edgelist-even-edgelist empty-gcons = Eq.refl
 edgelist-even-edgelist (addnode-gcons gc) = edgelist-even-edgelist gc
 edgelist-even-edgelist (addegde-gcons gc) = edgelist-even-edgelist gc
 ```
- 
+
+
+Now we implement gradphs with an adjacency list.
+
+```agda
+open import Relation.Binary using (DecidableEquality)
+record Dict (K V : Set) (D : Set) : Set₁ where
+  field
+    emp-ty : D
+    is-key : D → K → Set
+    key-eq : (k : K) → (k' : K) → k ≡ k'
+    in-sert : D → K × V → D
+    look-up : D → (DecidableEquality K) → K →  V ⊎ ⊤
+
+list-dict : (K V : Set) → Dict K V (List (K × V))
+list-dict K V .Dict.emp-ty = []
+list-dict K V .Dict.is-key l v = contains (List.map proj₁ l) v
+list-dict K V .Dict.in-sert d kv = kv ∷ d
+list-dict K V .Dict.look-up [] K=K? k = inj₂ tt
+list-dict K V .Dict.look-up ((k , v) ∷ d) K=K? k' with K=K? k k'
+... | yes Px = inj₁ v
+... | no _ = [ (λ v' → inj₁ v' ), (λ _ → inj₂ tt) ]′ (list-dict K V .Dict.look-up d K=K? k')
+
+```
+
+```agda
+adjlist-nat-graph : Graph ℕ (List ℕ × List ℕ)
+adjlist-nat-graph .Graph.empty = {!   !}
+adjlist-nat-graph .Graph.isnode (vs , adjlist) n = {!   !}
+adjlist-nat-graph .Graph.addnode (vs , adjlist) v _ = {!   !}
+adjlist-nat-graph .Graph.isedge = {!   !}
+adjlist-nat-graph .Graph.addedge = {!   !}
+adjlist-nat-graph .Graph.n = {!   !}
+adjlist-nat-graph .Graph.nodes = {!   !}
+adjlist-nat-graph .Graph.m = {!   !}
+adjlist-nat-graph .Graph.nnbors = {!   !}
+adjlist-nat-graph .Graph.nbors = {!   !}
+```
