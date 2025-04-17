@@ -142,8 +142,8 @@ edgelist-nat-graph .Graph.nbors (_ , es) v = Vec.fromList (List.map proj₂ (fil
 ```agda
 data GraphConstruction {V G} (Gr : Graph V G) : G → Set where
   empty-gcons : GraphConstruction Gr (Graph.empty Gr)
-  addnode-gcons : ∀ {g v npv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addnode Gr g v npv)
-  addegde-gcons : ∀ {g uv nuv pu pv npuv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
+  addnode-gcons : ∀ {g} → GraphConstruction Gr g → ∀ {v npv} → GraphConstruction Gr (Graph.addnode Gr g v npv)
+  addegde-gcons : ∀ {g} → GraphConstruction Gr g → ∀ {uv nuv pu pv npuv} → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
 
 graph-induction : ∀ {V G} → (Gr : Graph V G) → (P : Graph V G → G → Set) → Set
 graph-induction {G = G} Gr P = {g : G} → GraphConstruction Gr g → P Gr g
