@@ -142,11 +142,11 @@ edgelist-nat-graph .Graph.nbors (_ , es) v = Vec.fromList (List.map proj₂ (fil
 ```agda
 data GraphConstruction {V G} (Gr : Graph V G) : G → Set where
   empty-gcons : GraphConstruction Gr (Graph.empty Gr)
-  addnode-gcons : (g : G) → ∀ {v npv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addnode Gr g v npv)
-  addegde-gcons : (g : G) → ∀ {uv nuv pu pv npuv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
+  addnode-gcons : ∀ {g v npv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addnode Gr g v npv)
+  addegde-gcons : ∀ {g uv nuv pu pv npuv} → GraphConstruction Gr g → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
 
 graph-induction : ∀ {V G} → (Gr : Graph V G) → (P : Graph V G → G → Set) → Set
-graph-induction {G = G} Gr P = (g : G) → GraphConstruction Gr g → P Gr g
+graph-induction {G = G} Gr P = {g : G} → GraphConstruction Gr g → P Gr g
 ```
 
 ```agda
@@ -154,13 +154,13 @@ undirected : ∀ {V G} (Gr : Graph V G) → (g : G) → Set
 undirected {V} Gr g = ((uv : V × V) → Graph.isedge Gr g uv → Graph.isedge Gr g (Data.Product.swap uv))
 
 edgelist-undirected : graph-induction edgelist-nat-graph undirected
-edgelist-undirected _ empty-gcons _ ()
-edgelist-undirected gp (addnode-gcons g gc) uv uv-in-g = edgelist-undirected g gc uv uv-in-g
-edgelist-undirected gp (addegde-gcons g gc) _ (Fin.zero , Eq.refl) = Fin.suc Fin.zero , Eq.refl
-edgelist-undirected gp (addegde-gcons g gc) _ (Fin.suc Fin.zero , Eq.refl) = Fin.zero , Eq.refl
-edgelist-undirected gp (addegde-gcons g gc) (u , v) (Fin.suc (Fin.suc idx) , Eq.refl) = Fin.suc (Fin.suc (proj₁ ih)) , proj₂ ih
+edgelist-undirected empty-gcons _ ()
+edgelist-undirected (addnode-gcons gc) uv uv-in-g = edgelist-undirected gc uv uv-in-g
+edgelist-undirected (addegde-gcons gc) _ (Fin.zero , Eq.refl) = Fin.suc Fin.zero , Eq.refl
+edgelist-undirected (addegde-gcons gc) _ (Fin.suc Fin.zero , Eq.refl) = Fin.zero , Eq.refl
+edgelist-undirected (addegde-gcons {g} gc) (u , v) (Fin.suc (Fin.suc idx) , Eq.refl) = Fin.suc (Fin.suc (proj₁ ih)) , proj₂ ih
                                       where
                                       ih : Graph.isedge edgelist-nat-graph g (v , u)
-                                      ih = edgelist-undirected g gc (u , v) (idx , Eq.refl)
+                                      ih = edgelist-undirected gc (u , v) (idx , Eq.refl)
 ```
  
