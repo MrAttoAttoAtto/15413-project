@@ -6,8 +6,11 @@ needed.
 ```agda
 module GraphProject where
 
--- _×_
+-- _×_ and _⊎_ and ⊤ and ⊥
 open import Data.Product
+open import Data.Sum
+open import Data.Empty
+open import Data.Unit
 
 -- ℕ
 open import Data.Nat
