@@ -271,7 +271,7 @@ listDict K V .Dict.update ((k' , v') ∷ d) K=K? (k , v) with K=K? k k'
 -- the yes case assumes d does not contain k, meaning no duplicates
 ... | yes p = (k , v) ∷ d
 ... | no _ =  Dict.update (listDict K V) d K=K? (k , v)
-listDict K V .Dict.size d = List.length ({!   !})
+listDict K V .Dict.size d = List.length (List.map proj₁ d)
 listDict K V .Dict.keys d = List.map proj₁ d
 
 AdjList : Set
@@ -291,7 +291,7 @@ adjlist-nat-graph .Graph.addedge g (v1 , v2) _ _ _ _ =
   let v1nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict g Nat._≟_ v1) in
   let v2nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict g Nat._≟_ v2) in
     Dict.update dict (Dict.update dict g Nat._≟_ (v2 , v1 ∷ v2nbors)) Nat._≟_ (v1 , v2 ∷ v1nbors)
-adjlist-nat-graph .Graph.n g = dict .Dict.size g
+adjlist-nat-graph .Graph.n g = Dict.size dict g
 adjlist-nat-graph .Graph.nodes g = let keys = (Dict.keys dict g) in Vec.fromList keys
 adjlist-nat-graph .Graph.m g = List.sum (List.map List.length (List.map proj₂ g))
 -- nbors has no guarantee v is in the graph
