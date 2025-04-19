@@ -245,31 +245,57 @@ record Dict (K V : Set) (D : Set) : Set₁ where
   field
     emp-ty : D
     is-key : D → K → Set
-    key-eq : (k : K) → (k' : K) → k ≡ k'
     in-sert : D → K × V → D
     look-up : D → (DecidableEquality K) → K →  V ⊎ ⊤
+    update : D → (DecidableEquality K) → K × V → D
+    size : D → ℕ
+    keys : (d : D) → List K
 
-list-dict : (K V : Set) → Dict K V (List (K × V))
-list-dict K V .Dict.emp-ty = []
-list-dict K V .Dict.is-key l v = contains (List.map proj₁ l) v
-list-dict K V .Dict.in-sert d kv = kv ∷ d
-list-dict K V .Dict.look-up [] K=K? k = inj₂ tt
-list-dict K V .Dict.look-up ((k , v) ∷ d) K=K? k' with K=K? k k'
+
+listDictType : (K V : Set) → Set
+listDictType K V = List (K × V)
+
+listDict : (K V : Set) → Dict K V (listDictType K V)
+listDict K V .Dict.emp-ty = []
+listDict K V .Dict.is-key d k = contains (List.map proj₁ d) k
+listDict K V .Dict.in-sert d kv = kv ∷ d
+listDict K V .Dict.look-up [] K=K? k = inj₂ tt
+listDict K V .Dict.look-up ((k , v) ∷ d) K=K? k' with K=K? k k'
 ... | yes Px = inj₁ v
-... | no _ = [ (λ v' → inj₁ v' ), (λ _ → inj₂ tt) ]′ (list-dict K V .Dict.look-up d K=K? k')
+... | no _ = [ (λ v' → inj₁ v' ), (λ _ → inj₂ tt) ]′ (listDict K V .Dict.look-up d K=K? k')
+listDict K V .Dict.update [] K=K? (k , v) = []
+listDict K V .Dict.update ((k' , v') ∷ d) K=K? (k , v) with K=K? k k'
+-- the yes case assumes d does not contain k, meaning no duplicates
+... | yes p = (k , v) ∷ d
+... | no _ =  Dict.update (listDict K V) d K=K? (k , v)
+listDict K V .Dict.size d = List.length ({!   !})
+listDict K V .Dict.keys d = List.map proj₁ d
 
-```
+AdjList : Set
+AdjList = listDictType ℕ (List ℕ)
 
-```agda
-adjlist-nat-graph : Graph ℕ (List ℕ × List ℕ)
-adjlist-nat-graph .Graph.empty = {!   !}
-adjlist-nat-graph .Graph.isnode (vs , adjlist) n = {!   !}
-adjlist-nat-graph .Graph.addnode (vs , adjlist) v _ = {!   !}
-adjlist-nat-graph .Graph.isedge = {!   !}
-adjlist-nat-graph .Graph.addedge = {!   !}
-adjlist-nat-graph .Graph.n = {!   !}
-adjlist-nat-graph .Graph.nodes = {!   !}
-adjlist-nat-graph .Graph.m = {!   !}
-adjlist-nat-graph .Graph.nnbors = {!   !}
-adjlist-nat-graph .Graph.nbors = {!   !}
+dict : Dict ℕ (List ℕ) AdjList
+dict = listDict ℕ (List ℕ)
+
+adjlist-nat-graph : Graph ℕ AdjList
+adjlist-nat-graph .Graph.empty = Dict.emp-ty dict
+adjlist-nat-graph .Graph.isnode d n = Dict.is-key dict d n
+adjlist-nat-graph .Graph.addnode g vtx _ = Dict.in-sert dict g (vtx , [])
+adjlist-nat-graph .Graph.isedge g (v1 , v2) = 
+  -- assumes edges are added symmetrically
+  [ (λ v1nbors → contains v1nbors v2) , (λ _ → ⊥) ]′ (Dict.look-up dict g Nat._≟_ v1)
+adjlist-nat-graph .Graph.addedge g (v1 , v2) _ _ _ _ = 
+  let v1nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict g Nat._≟_ v1) in
+  let v2nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict g Nat._≟_ v2) in
+    Dict.update dict (Dict.update dict g Nat._≟_ (v2 , v1 ∷ v2nbors)) Nat._≟_ (v1 , v2 ∷ v1nbors)
+adjlist-nat-graph .Graph.n g = dict .Dict.size g
+adjlist-nat-graph .Graph.nodes g = let keys = (Dict.keys dict g) in Vec.fromList keys
+adjlist-nat-graph .Graph.m g = List.sum (List.map List.length (List.map proj₂ g))
+-- nbors has no guarantee v is in the graph
+adjlist-nat-graph .Graph.nnbors g v = 
+  let nbors = [ (λ nbors → nbors) , (λ _ → [])]′ (Dict.look-up dict g Nat._≟_ v) in 
+    List.length nbors
+adjlist-nat-graph .Graph.nbors g v = 
+  let nbors = [ (λ nbors → nbors) , (λ _ → [])]′ (Dict.look-up dict g Nat._≟_ v) in 
+    Vec.fromList nbors
 ```
