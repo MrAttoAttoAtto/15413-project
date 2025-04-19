@@ -219,4 +219,20 @@ edgelist-undirected (addegde-gcons {g} gc) (u , v) (Fin.suc (Fin.suc idx) , Eq.r
                                       ih : Graph.isedge edgelist-nat-graph g (v , u)
                                       ih = edgelist-undirected gc (u , v) (idx , Eq.refl)
 ```
+
+As a small lemma, we prove by induction that the edgelist is always even length
+in the above implementation.
+
+```agda
+edgelist-induction : (P : Edgelist → Set) → Set
+edgelist-induction P = graph-induction edgelist-nat-graph (λ _ → P)
+
+even-len : (g : Edgelist) → Set
+even-len (_ , es) = List.length es % 2 ≡ 0
+
+edgelist-even-edgelist : edgelist-induction even-len
+edgelist-even-edgelist empty-gcons = Eq.refl
+edgelist-even-edgelist (addnode-gcons gc) = edgelist-even-edgelist gc
+edgelist-even-edgelist (addegde-gcons gc) = edgelist-even-edgelist gc
+```
  
