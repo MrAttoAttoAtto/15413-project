@@ -29,11 +29,8 @@ open import Relation.Nullary.Decidable using (yes; no)
 We define a QPER that represents a relation between two implementations of a graph.
 
 ```agda
-variable
-  g g' : Set
-
-record QPERGraph (g g' : Set) (G : Graph ℕ g) (G' : Graph ℕ g') : Set₂ where
+record QPERGraph (g : Set) (g' : Set) (G : Graph ℕ g) (G' : Graph ℕ g') : Set₂ where
   field
-      R : (M : G) (M' : G') → Set
-      zzc : {M N : G} {M' N' : G'} → R M M' → R N N' → R N M' → R M N' 
+      R : (M : g) (M' : g') → Set
+      zzc : {M N : g} {M' N' : g'} → R M M' → R N N' → R N M' → R M N' 
 ```
