@@ -293,7 +293,7 @@ adjlist-nat-graph .Graph.addedge g (v1 , v2) _ _ _ _ =
     Dict.update dict (Dict.update dict g Nat._≟_ (v2 , v1 ∷ v2nbors)) Nat._≟_ (v1 , v2 ∷ v1nbors)
 adjlist-nat-graph .Graph.n g = Dict.size dict g
 adjlist-nat-graph .Graph.nodes g = let keys = (Dict.keys dict g) in Vec.fromList keys
-adjlist-nat-graph .Graph.m g = List.sum (List.map List.length (List.map proj₂ g))
+adjlist-nat-graph .Graph.m g = (List.sum (List.map List.length (List.map proj₂ g))) / 2
 -- nbors has no guarantee v is in the graph
 adjlist-nat-graph .Graph.nnbors g v = 
   let nbors = [ (λ nbors → nbors) , (λ _ → [])]′ (Dict.look-up dict g Nat._≟_ v) in 
