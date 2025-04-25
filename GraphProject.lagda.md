@@ -271,7 +271,7 @@ listDict K V .Dict.update [] K=K? (k , v) = (k , v) ∷ []
 listDict K V .Dict.update ((k' , v') ∷ d) K=K? (k , v) with K=K? k k'
 -- the yes case assumes d does not have duplicate keys
 ... | yes p = (k , v) ∷ d
-... | no _ =  Dict.update (listDict K V) d K=K? (k , v)
+... | no _ = (k' , v') ∷ (Dict.update (listDict K V) d K=K? (k , v))
 listDict K V .Dict.size d = List.length (List.map proj₁ d)
 listDict K V .Dict.keys d = List.map proj₁ d
 
