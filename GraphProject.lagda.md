@@ -12,6 +12,9 @@ open import Data.Sum
 open import Data.Empty
 open import Data.Unit
 
+open import Relation.Nullary.Decidable using (does)
+open import Data.Bool
+
 -- ℕ
 open import Data.Nat
 import Data.Nat.Properties as Nat
@@ -318,4 +321,37 @@ edgelist-to-adjlist (unique_vs , (u , v) ∷ edges) =
     Dict.update dict (Dict.update dict rec_adjlist Nat._≟_ (v , u ∷ v_nbors)) Nat._≟_ (u , v ∷ u_nbors)
 
 
+```
+
+Finally, we implement a graph as a function-backed adjacency list. We still have
+a list of vertices, but we now have a function which maps a vertex to its
+neighbourhood to represent the edges.
+
+```agda
+-- An argument (u , v) modifies the provided function to add v to u's
+-- neighbourhood
+addedge-helper : ℕ × ℕ → (ℕ → List ℕ) → ℕ → List ℕ
+addedge-helper (u , v) ns w with does (Nat._≟_ w u)
+... | true  = v ∷ (ns u)
+... | false = ns w
+
+func-adjlist-nat-graph : Graph ℕ (List ℕ × (ℕ → List ℕ))
+-- In the empty case, all neighbourhoods are empty
+func-adjlist-nat-graph .Graph.empty = [] , λ v → []
+-- The node-related operations are the same as in the edgelist case
+func-adjlist-nat-graph .Graph.isnode (vs , _) v = contains vs v
+func-adjlist-nat-graph .Graph.addnode (vs , ns) v _ = v ∷ vs , ns
+-- An edge exists if the second vertex is in the neighbourhood of the first
+func-adjlist-nat-graph .Graph.isedge (_ , ns) (u , v) = contains (ns u) v
+-- When we add an edge, we add both endpoints to each others' neighbourhoods
+func-adjlist-nat-graph .Graph.addedge (vs , ns) (u , v) _ _ _ _ = vs , addedge-helper (u , v) (addedge-helper (v , u) ns)
+func-adjlist-nat-graph .Graph.n (vs , _) = List.length vs
+func-adjlist-nat-graph .Graph.nodes (vs , _) = Vec.fromList vs
+-- The number of edges is the number of vertices in all the neighbourhoods,
+-- divided by 2 (to prevent double counting)
+func-adjlist-nat-graph .Graph.m (vs , ns) = List.sum (List.map (λ v → List.length (ns v)) vs) / 2
+-- And, finally, the neighbourhood is simply that returned by the neighbourhood
+-- function!
+func-adjlist-nat-graph .Graph.nnbors (_ , ns) v = List.length (ns v)
+func-adjlist-nat-graph .Graph.nbors (_ , ns) v = Vec.fromList (ns v)
 ```
