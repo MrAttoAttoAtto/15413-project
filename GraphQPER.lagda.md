@@ -1,3 +1,5 @@
+### PLEASE NOTE: there is another file called QPERGraph.lagda.md which contains **different content**!
+
 This file contains some experiments in proving representation invariance between
 the edge list representation and the function-backed adjacency list
 representation.
