@@ -266,21 +266,23 @@ listDict K V .Dict.look-up [] K=K? k = inj₂ tt
 listDict K V .Dict.look-up ((k , v) ∷ d) K=K? k' with K=K? k k'
 ... | yes Px = inj₁ v
 ... | no _ = [ (λ v' → inj₁ v' ), (λ _ → inj₂ tt) ]′ (listDict K V .Dict.look-up d K=K? k')
-listDict K V .Dict.update [] K=K? (k , v) = []
+-- if the key is not found in the dictionary, insert it with value v
+listDict K V .Dict.update [] K=K? (k , v) = (k , v) ∷ []
 listDict K V .Dict.update ((k' , v') ∷ d) K=K? (k , v) with K=K? k k'
--- the yes case assumes d does not contain k, meaning no duplicates
+-- the yes case assumes d does not have duplicate keys
 ... | yes p = (k , v) ∷ d
-... | no _ =  Dict.update (listDict K V) d K=K? (k , v)
+... | no _ = (k' , v') ∷ (Dict.update (listDict K V) d K=K? (k , v))
 listDict K V .Dict.size d = List.length (List.map proj₁ d)
 listDict K V .Dict.keys d = List.map proj₁ d
 
-AdjList : Set
-AdjList = listDictType ℕ (List ℕ)
+Adjlist : Set
+Adjlist = listDictType ℕ (List ℕ)
 
-dict : Dict ℕ (List ℕ) AdjList
+-- the implementation of an adjacency list as a pair of vertices and a list of its neighbors
+dict : Dict ℕ (List ℕ) Adjlist
 dict = listDict ℕ (List ℕ)
 
-adjlist-nat-graph : Graph ℕ AdjList
+adjlist-nat-graph : Graph ℕ Adjlist
 adjlist-nat-graph .Graph.empty = Dict.emp-ty dict
 adjlist-nat-graph .Graph.isnode d n = Dict.is-key dict d n
 adjlist-nat-graph .Graph.addnode g vtx _ = Dict.in-sert dict g (vtx , [])
@@ -293,7 +295,7 @@ adjlist-nat-graph .Graph.addedge g (v1 , v2) _ _ _ _ =
     Dict.update dict (Dict.update dict g Nat._≟_ (v2 , v1 ∷ v2nbors)) Nat._≟_ (v1 , v2 ∷ v1nbors)
 adjlist-nat-graph .Graph.n g = Dict.size dict g
 adjlist-nat-graph .Graph.nodes g = let keys = (Dict.keys dict g) in Vec.fromList keys
-adjlist-nat-graph .Graph.m g = List.sum (List.map List.length (List.map proj₂ g))
+adjlist-nat-graph .Graph.m g = (List.sum (List.map List.length (List.map proj₂ g))) / 2
 -- nbors has no guarantee v is in the graph
 adjlist-nat-graph .Graph.nnbors g v = 
   let nbors = [ (λ nbors → nbors) , (λ _ → [])]′ (Dict.look-up dict g Nat._≟_ v) in 
@@ -301,4 +303,19 @@ adjlist-nat-graph .Graph.nnbors g v =
 adjlist-nat-graph .Graph.nbors g v = 
   let nbors = [ (λ nbors → nbors) , (λ _ → [])]′ (Dict.look-up dict g Nat._≟_ v) in 
     Vec.fromList nbors
+```
+
+Now we convert between them
+```agda
+-- when converting to an adjacency list, uniqueness is handled by casing on dictionary lookup, 
+-- so we just ignore the unique part of edge lists.
+edgelist-to-adjlist : Edgelist → Adjlist
+edgelist-to-adjlist (_ , []) = []
+edgelist-to-adjlist (unique_vs , (u , v) ∷ edges) = 
+  let rec_adjlist = edgelist-to-adjlist (unique_vs , edges) in
+  let u_nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict rec_adjlist Nat._≟_ u) in
+  let v_nbors = [ (λ nbors → nbors) , (λ _ → []) ]′ (Dict.look-up dict rec_adjlist Nat._≟_ v) in
+    Dict.update dict (Dict.update dict rec_adjlist Nat._≟_ (v , u ∷ v_nbors)) Nat._≟_ (u , v ∷ u_nbors)
+
+
 ```
