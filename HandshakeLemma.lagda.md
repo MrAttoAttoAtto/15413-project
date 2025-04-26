@@ -60,7 +60,7 @@ edgelist-nonnode-no-edges (addnode-gcons {vs \\ _ , _} gc) v v_nonnode = edgelis
 -- particular, neither can possibly be w (which is not a node, by assumption).
 -- So, we know that the "first two" (aka the new) elements of the edgelist cannot
 -- mention w, so, by applying the IH, we know that w cannot be mentioned at all.
-edgelist-nonnode-no-edges (addegde-gcons {vs , es} gc {u , v} {_} {u_node} {v_node}) w w_nonnode with Nat._≟_ w u in eq1 | Nat._≟_ w v in eq2
+edgelist-nonnode-no-edges (addedge-gcons {vs , es} gc {u , v} {_} {u_node} {v_node}) w w_nonnode with Nat._≟_ w u in eq1 | Nat._≟_ w v in eq2
 ... | yes Eq.refl | _ = ⊥-elim (w_nonnode u_node)
 ... | _ | yes Eq.refl = ⊥-elim (w_nonnode v_node)
 ... | no _ | no _ rewrite eq1 rewrite eq2 = edgelist-nonnode-no-edges gc w w_nonnode
@@ -778,7 +778,7 @@ edgelist-handshake {gp} (addnode-gcons {g} gc {v} {p}) =
                         ≡⟨⟩
                         2 * Graph.m Gr gp
                         ∎
-edgelist-handshake {gp} (addegde-gcons {g} gc {u , v} {p1} {p2} {p3} {p4}) =
+edgelist-handshake {gp} (addedge-gcons {g} gc {u , v} {p1} {p2} {p3} {p4}) =
                         let Gr = edgelist-nat-graph in
                         let open ≡-Reasoning in
                         begin

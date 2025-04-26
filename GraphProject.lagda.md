@@ -189,7 +189,7 @@ operations used to create that graph.
 data GraphConstruction {V G} (Gr : Graph V G) : G → Set where
   empty-gcons : GraphConstruction Gr (Graph.empty Gr)
   addnode-gcons : ∀ {g} → GraphConstruction Gr g → ∀ {v npv} → GraphConstruction Gr (Graph.addnode Gr g v npv)
-  addegde-gcons : ∀ {g} → GraphConstruction Gr g → ∀ {uv nuv pu pv npuv} → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
+  addedge-gcons : ∀ {g} → GraphConstruction Gr g → ∀ {uv nuv pu pv npuv} → GraphConstruction Gr (Graph.addedge Gr g uv nuv pu pv npuv)
 
 -- This is parametrised on a graph implementation and a predicate.
 -- A proof by graph induction is a function that takes in any graph, takes in
@@ -218,9 +218,9 @@ edgelist-undirected (addnode-gcons gc) uv uv-in-g = edgelist-undirected gc uv uv
 -- was the 'reverse' of the edge that was added, or it already existed in the
 -- graph. In the first two cases, we show this directly by the definition. In
 -- the last case, we use induction.
-edgelist-undirected (addegde-gcons gc) _ (Fin.zero , Eq.refl) = Fin.suc Fin.zero , Eq.refl
-edgelist-undirected (addegde-gcons gc) _ (Fin.suc Fin.zero , Eq.refl) = Fin.zero , Eq.refl
-edgelist-undirected (addegde-gcons {g} gc) (u , v) (Fin.suc (Fin.suc idx) , Eq.refl) = Fin.suc (Fin.suc (proj₁ ih)) , proj₂ ih
+edgelist-undirected (addedge-gcons gc) _ (Fin.zero , Eq.refl) = Fin.suc Fin.zero , Eq.refl
+edgelist-undirected (addedge-gcons gc) _ (Fin.suc Fin.zero , Eq.refl) = Fin.zero , Eq.refl
+edgelist-undirected (addedge-gcons {g} gc) (u , v) (Fin.suc (Fin.suc idx) , Eq.refl) = Fin.suc (Fin.suc (proj₁ ih)) , proj₂ ih
                                       where
                                       ih : Graph.isedge edgelist-nat-graph g (v , u)
                                       ih = edgelist-undirected gc (u , v) (idx , Eq.refl)
@@ -239,7 +239,7 @@ even-len (_ , es) = List.length es % 2 ≡ 0
 edgelist-even-edgelist : edgelist-induction even-len
 edgelist-even-edgelist empty-gcons = Eq.refl
 edgelist-even-edgelist (addnode-gcons gc) = edgelist-even-edgelist gc
-edgelist-even-edgelist (addegde-gcons gc) = edgelist-even-edgelist gc
+edgelist-even-edgelist (addedge-gcons gc) = edgelist-even-edgelist gc
 ```
 
 
